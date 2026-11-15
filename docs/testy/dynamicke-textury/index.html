@@ -5,14 +5,17 @@
 <p>Každé ze 64 porovnání sledujte alespoň čtyři sekundy. Počítejte přibližně s deseti minutami. Kdykoli můžete skončit a později pokračovat ve stejném prohlížeči.</p>
 <div class="tabs" aria-label="Režim měření"><a href="./" id="tab-person">Účast ve výzkumu</a><a href="?rezim=zkouska" id="tab-demo">Jen vyzkoušet</a></div>
 <p id="mode-info"></p><p class="warning" id="size-intro" hidden>Otevřete test na počítači a zvětšete okno alespoň na 900 × 650 pixelů. Všechna tři videa musí být vidět současně.</p>
+<p>U jednoho počítače se můžete střídat. Při předání zvolte <strong>Další účastník</strong>. Každý začne s vlastním souhlasem a od prvního porovnání.</p>
 <label class="check" id="consent-row"><input type="checkbox" id="consent"><span id="consent-label"></span></label>
-<div class="actions"><button id="start" class="primary" disabled>Zahájit test</button><button id="resume" class="primary" hidden>Pokračovat v uloženém měření</button></div></section>
+<div class="actions"><button id="start" class="primary" disabled>Zahájit test</button><button id="resume" hidden>Pokračovat ve svém měření</button><button id="next-intro" class="primary" hidden>Další účastník</button></div></section>
 <section class="run" id="run" hidden><div class="meta-line"><span id="counter"></span><span id="run-mode"></span></div><progress id="progress" max="64" value="0"></progress>
 <h1 id="question"></h1><p class="warning" id="size-run" hidden>Pro přehrávání zobrazte všechna tři videa v okně alespoň 900 × 650 pixelů.</p>
 <div class="videos"><figure class="clip"><figcaption>Reference</figcaption><canvas id="ref" width="64" height="64"></canvas></figure><figure class="clip"><figcaption>Levé video</figcaption><canvas id="left" width="64" height="64"></canvas></figure><figure class="clip"><figcaption>Pravé video</figcaption><canvas id="right" width="64" height="64"></canvas></figure></div>
 <p class="status" id="ready" role="status"></p><div class="choices" aria-label="Vaše odpověď"><button data-choice="left" disabled>Levé</button><button data-choice="right" disabled>Pravé</button><button data-choice="tie" disabled>Přibližně stejně</button><button data-choice="unsure" disabled>Nedokážu posoudit</button><button data-choice="technical" disabled>Technický problém</button></div>
 <div class="run-tools"><button type="button" class="linkbutton" id="replay">Přehrát znovu</button><button type="button" class="linkbutton" id="pause">Přerušit test</button></div></section>
-<section class="end" id="end" hidden><p class="category" id="end-mode"></p><h1 id="end-title"></h1><p id="end-text"></p><div class="actions"><button id="again" class="primary" hidden>Pokračovat</button><button id="download">Stáhnout vlastní záznam</button><a href="../../">Přehled testů</a></div></section>
+<section class="end" id="end" hidden><p class="category" id="end-mode"></p><h1 id="end-title"></h1><p id="end-text"></p>
+<p id="return-note" hidden>Pokud uvolníte počítač a chcete se ke svým odpovědím vrátit, uložte si <a id="return-link" href="#">odkaz pro návrat k tomuto měření</a>. Funguje ve stejném prohlížeči.</p>
+<div class="actions"><button id="again" hidden>Pokračovat</button><button id="next-end" class="primary">Další účastník</button><button id="download">Stáhnout vlastní záznam</button><a href="../../">Přehled testů</a></div></section>
 <p class="notice" id="sync-note" role="status" hidden>Tuto položku už potvrdila jiná karta. Pokračujete u první nevyplněné volby.</p>
 <p class="error" id="error" role="alert"></p><div class="actions"><button id="retry" hidden>Znovu odeslat odpověď</button><button id="recover" hidden>Zahájit nové měření</button></div>
-</main><script src="data.js"></script><script src="app.js?v=2"></script></body></html>
+</main><script src="data.js"></script><script src="app.js?v=3"></script></body></html>

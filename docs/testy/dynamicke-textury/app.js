@@ -5,6 +5,8 @@ const mode = new URLSearchParams(location.search).get("rezim") === "zkouska" ? "
 const demo = mode === "qa";
 const modeName = demo ? "Technická zkouška" : "Účast ve výzkumu";
 const storageKey = "richtrad:textury:v1:" + mode;
+const tabKey = storageKey + ":posledni";
+const recordKey = id => storageKey + ":" + id;
 const el = id => document.getElementById(id);
 const canvases = ["ref", "left", "right"].map(el);
 const choices = [...document.querySelectorAll("[data-choice]")];
@@ -13,14 +15,37 @@ const allVisible = () => !document.hidden && viewportOK() && canvases.every(canv
   const b = canvas.getBoundingClientRect();
   return b.top >= 0 && b.left >= 0 && b.bottom <= innerHeight && b.right <= innerWidth;
 });
-let saved = null, session = null, playback = null, busy = false, generation = 0, unavailable = false;
+let saved = null, recent = null, session = null, playback = null, busy = false, generation = 0, unavailable = false;
 let raf = 0;
 function save(next) {
-  localStorage.setItem(storageKey, JSON.stringify(next));
+  localStorage.setItem(recordKey(next.id), JSON.stringify(next));
   saved = next;
 }
+function readRecord(id) {
+  if (!id || !/^[0-9a-f-]{36}$/.test(id)) return null;
+  return JSON.parse(localStorage.getItem(recordKey(id)));
+}
+function rememberTab() {
+  sessionStorage.setItem(tabKey,saved.id);
+  const url=new URL(location.href);
+  url.hash="mereni="+saved.id;
+  history.replaceState(null,"",url);
+}
 try {
-  saved = JSON.parse(localStorage.getItem(storageKey));
+  // Carry an existing measurement forward from the single-record version.
+  const legacy=JSON.parse(localStorage.getItem(storageKey));
+  if (legacy?.id) {
+    const current=readRecord(legacy.id);
+    if (!current || (legacy.pending && !current.pending && !current.complete)) {
+      localStorage.setItem(recordKey(legacy.id),JSON.stringify(legacy));
+    }
+    if (!sessionStorage.getItem(tabKey)) sessionStorage.setItem(tabKey,legacy.id);
+    localStorage.removeItem(storageKey);
+  }
+  const requestedId=new URLSearchParams(location.hash.slice(1)).get("mereni");
+  saved=readRecord(requestedId);
+  recent=readRecord(sessionStorage.getItem(tabKey));
+  if (recent?.complete) recent=null;
 } catch {
   unavailable = true;
   el("error").textContent = "Pro pokračování musí prohlížeč povolit místní uložení klíče měření.";
@@ -36,7 +61,11 @@ function syncIntro() {
   el("resume").disabled = unavailable || busy || !viewportOK();
   el("start").hidden = !!saved;
   el("consent-row").hidden = !!saved;
-  el("resume").hidden = !saved;
+  el("resume").hidden = !saved && !recent;
+  el("resume").textContent = saved?.complete ? "Zobrazit dokončené měření" : "Pokračovat ve svém měření";
+  el("next-intro").hidden = !saved;
+  el("next-intro").disabled = busy;
+  el("next-end").disabled = busy;
 }
 async function call(path, fields = {}) {
   let response;
@@ -65,6 +94,7 @@ function settings() {
     ? "Rozumím, že se mé zkušební volby a údaje o přehrávání uloží."
     : "Dobrovolně se účastním a souhlasím s uložením svých odpovědí a údajů o přehrávání.";
   el("start").textContent = demo ? "Spustit zkoušku" : "Zahájit test";
+  el("consent").checked=false;
   el("run-mode").textContent = el("end-mode").textContent = modeName;
   el("consent").onchange = syncIntro;
   window.addEventListener("resize",syncIntro);
@@ -80,6 +110,13 @@ function finish(paused) {
   el("end-text").textContent = (paused ? "Počet potvrzených odpovědí je " + session.answered + " z 64. " : "Úložiště potvrdilo všech 64 odpovědí. ")
     + (demo ? "Relace je označená jako technická zkouška." : "Odpovědi jsou uložené pod vaším náhodným kódem.");
   el("again").hidden = !paused;
+  el("return-note").hidden = !paused;
+  el("return-link").href = location.href;
+  if (!paused) {
+    if (!saved.complete) save({...saved,complete:true});
+    sessionStorage.removeItem(tabKey);
+    recent=null;
+  }
 }
 function message(text) { if (el("ready").textContent !== text) el("ready").textContent = text; }
 function setChoices() {
@@ -183,6 +220,7 @@ function syncSession() {
       const bytes=crypto.getRandomValues(new Uint8Array(32));
       save({id:crypto.randomUUID(),key:Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join(""),pending:null});
     }
+    rememberTab();
     session=await call("start",{mode,consent:true});
     if (saved.pending) await submitPending();
     await show();
@@ -198,7 +236,12 @@ for (const b of choices) b.onclick = () => withLock(async()=>{
   stopPlayback(); await submitPending(); await show();
 });
 el("retry").onclick=()=>withLock(async()=>{await submitPending(); await show();});
-el("start").onclick=el("resume").onclick=syncSession;
+el("start").onclick=syncSession;
+el("resume").onclick=()=>{
+  if (busy) return;
+  if (!saved && recent) saved=readRecord(recent.id);
+  if (saved) syncSession();
+};
 el("replay").onclick=()=>{
   const p=playback;
   if (!p || busy || saved.pending) return;
@@ -207,7 +250,23 @@ el("replay").onclick=()=>{
 };
 el("pause").onclick=()=>{ if (session && !saved.pending) finish(true); };
 el("again").onclick=syncSession;
-el("recover").onclick=()=>{localStorage.removeItem(storageKey); location.reload();};
+function enrollmentScreen() {
+  if (saved?.complete) localStorage.removeItem(recordKey(saved.id));
+  sessionStorage.removeItem(tabKey);
+  const url=new URL(location.href);
+  url.hash="";
+  history.replaceState(null,"",url);
+  stopPlayback(); saved=null; recent=null; session=null;
+  el("consent").checked=false;
+  for (const id of ["recover","retry","sync-note"]) el(id).hidden=true;
+  el("error").textContent="";
+  panel("intro");
+}
+el("next-intro").onclick=el("next-end").onclick=()=>withLock(async()=>{
+  if (saved?.pending) await submitPending();
+  enrollmentScreen();
+});
+el("recover").onclick=()=>withLock(enrollmentScreen);
 el("download").onclick=()=>withLock(async()=>{
   const result=await call("own-record");
   const url=URL.createObjectURL(new Blob([JSON.stringify(result,null,2)],{type:"application/json"}));
