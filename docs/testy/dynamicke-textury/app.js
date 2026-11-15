@@ -51,7 +51,7 @@ async function call(path, fields = {}) {
   try { result = await response.json(); } catch { throw Error("Úložiště nevrátilo potvrzení. Zkuste to znovu."); }
   if (!response.ok) {
     if (response.status === 410 || (path === "start" && response.status === 409)) el("recover").hidden = false;
-    throw Error(result.error || "Požadavek se nepodařilo uložit.");
+    throw Object.assign(Error(result.error || "Požadavek se nepodařilo uložit."), {status:response.status});
   }
   if (result.protocol_sha256 !== PROTOCOL_HASH) throw Error("Verze plánu a úložiště se neshodují.");
   return result;
@@ -85,6 +85,8 @@ function message(text) { if (el("ready").textContent !== text) el("ready").textC
 function setChoices() {
   const ready = playback && playback.loaded && playback.visible >= 4000 && allVisible();
   for (const b of choices) b.disabled = busy || !!saved?.pending || !playback || (b.dataset.choice !== "technical" && !ready);
+  el("pause").disabled = !session || !!saved?.pending;
+  el("replay").disabled = !playback || !!saved?.pending;
 }
 function draw(now) {
   const p = playback;
@@ -126,7 +128,7 @@ function startImage(src) {
     const img = new Image(); img.onload=()=>resolve(img); img.onerror=()=>reject(Error("Video se nepodařilo načíst. Zkuste přehrání znovu nebo zvolte technický problém.")); img.src=src;
   });
 }
-async function show() {
+function show() {
   stopPlayback(); el("retry").hidden=true; el("error").textContent="";
   if (session.status === "complete") { finish(false); return; }
   const own = generation;
@@ -140,11 +142,11 @@ async function show() {
   playback=p;
   for (const canvas of canvases) { const cx=canvas.getContext("2d"); cx.fillStyle="#222"; cx.fillRect(0,0,64,64); }
   panel("run"); message("Načítání videí…"); setChoices();
-  try {
-    p.images=await Promise.all(p.clips.map(c=>startImage(c.sprite)));
+  Promise.all(p.clips.map(c=>startImage(c.sprite))).then(images=>{
     if (generation!==own) return;
+    p.images=images;
     p.loaded=true; p.lastNow=performance.now(); raf=requestAnimationFrame(draw);
-  } catch (e) { if (generation===own) { message(e.message); setChoices(); } }
+  }).catch(e=>{ if (generation===own) { message(e.message); setChoices(); } });
 }
 async function submitPending() {
   if (!saved?.pending) return;
@@ -156,6 +158,15 @@ async function submitPending() {
   } catch (e) {
     el("retry").hidden=false;
     message("Odpověď čeká na potvrzení úložiště.");
+    if (e.status === 409) {
+      const latest = await call("session");
+      if (latest.answered > saved.pending.presentation_index) {
+        session = latest;
+        save({...saved,pending:null});
+        el("sync-note").hidden=false;
+        return;
+      }
+    }
     throw e;
   }
 }
@@ -194,7 +205,7 @@ el("replay").onclick=()=>{
   if (!p.loaded) { show(); return; }
   p.clock=0; p.last=[-2,-2,-2]; p.replays++;
 };
-el("pause").onclick=()=>{ if (!busy && !saved.pending) finish(true); };
+el("pause").onclick=()=>{ if (session && !saved.pending) finish(true); };
 el("again").onclick=syncSession;
 el("recover").onclick=()=>{localStorage.removeItem(storageKey); location.reload();};
 el("download").onclick=()=>withLock(async()=>{
