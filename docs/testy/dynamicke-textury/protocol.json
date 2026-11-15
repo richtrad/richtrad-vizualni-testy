@@ -1,0 +1,44 @@
+{
+  "id": "M2-human-60-v1",
+  "primary": "overall human similarity; calibrated J2 versus M2 with identical two-parameter readout",
+  "secondary": "motion separately; simple/strong baselines and constrained composites",
+  "items": 60,
+  "new_control_items": 12,
+  "participants_planned": 32,
+  "unique_trials_per_person": 30,
+  "responses_per_person": 64,
+  "votes_per_item_question_total": 16,
+  "votes_per_item_question_participant_split": 8,
+  "minimum_visible_ms": 4000,
+  "fps": 10,
+  "replay_black_pause_ms": 300,
+  "minimum_viewport_css": [
+    900,
+    650
+  ],
+  "source_split": "M1 advection+oscillation calibration; all remaining including new Cartesian family evaluation",
+  "person_split": "slots1-16 calibration,17-32 evaluation",
+  "main_training": "calibration people AND calibration sources; no repeats/unsure/technical",
+  "main_evaluation": "evaluation people AND evaluation sources; no repeats/unsure/technical",
+  "calibration_budget": {
+    "tau": [
+      0.01,
+      10
+    ],
+    "eta": [
+      -4,
+      4
+    ],
+    "starts": 5,
+    "maxiter_per_start": 500,
+    "weight_l2": 0.01,
+    "eta_l2": 0.001
+  },
+  "human_data": "none at preparation; QA mode cannot count as human",
+  "collection": "local loopback only; participants disabled unless explicitly launched with --allow-participants",
+  "trials_sha256": "b5f235516389b0cacda6f0eb7f6cfe9bde28e253cc4adb53a93c280ebfdb9eb4",
+  "plans_sha256": "05471c5230004c85bc32823e40070f2e98c4172b63171fb3caa43ef6d57768a2",
+  "stimuli_sha256": "8b95286c253d42d5cfe24133698b0ea87fafc5581eb57d6f63b7c986c14867ee",
+  "frozen_predictions_sha256": "2641a943b770833ed3cc9f1b4a4e37dd16aa44ea3cfef76c168236aed275e075",
+  "scales_sha256": "c4a0e6d1f31e72277e0190b60112705b7349725612f3831bd4de6a047b04a455"
+}

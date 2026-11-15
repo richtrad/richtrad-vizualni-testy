@@ -1,0 +1,5 @@
+* text=auto eol=lf
+*.png binary
+**/protocol.json -text
+**/session_plans.json -text
+**/trials.json -text
